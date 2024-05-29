@@ -22,6 +22,11 @@
 #include "itkHighPriorityRealTimeProbe.h"
 #include "itkHighPriorityRealTimeProbesCollector.h"
 
+#if defined(PERFORMANCE_BENCHMARKING_USE_ITKWASM)
+#  include "itkPipeline.h"
+#  include "itkOutputTextStream.h"
+#endif
+
 #include <sstream>
 #include <fstream>
 #include "PerformanceBenchmarkingUtilities.h"
@@ -122,16 +127,46 @@ time_it(unsigned int threads, unsigned int iterations)
 int
 main(int argc, char * argv[])
 {
-  if (argc > 3)
+  bool          noPrintStdout = false;
+  bool          expandedReport = false;
+  bool          noPrintSystemInfo = false;
+  bool          noPrintReportHead = false;
+  constexpr int iterationsDefault = 500;
+  const int     threadsDefault = MultiThreaderName::GetGlobalDefaultNumberOfThreads();
+
+#if defined(PERFORMANCE_BENCHMARKING_USE_ITKWASM)
+  itk::wasm::Pipeline pipeline("thread-overhead", "Estimate the overhead cost per-thread.", argc, argv);
+
+  itk::wasm::OutputTextStream timingsJson;
+  pipeline.add_option("timings", timingsJson, "Internal timings")->type_name("OUTPUT_JSON");
+
+  pipeline.add_flag("--no-print-stdout", noPrintStdout, "Do not print to stdout.");
+  pipeline.add_flag("--expanded-report", expandedReport, "Print an expanded report.");
+  pipeline.add_flag("--no-print-system-info", noPrintSystemInfo, "Do not print system information.");
+  pipeline.add_flag("--no-print-report-head", noPrintReportHead, "Do not print the report header.");
+
+  int iterations = iterationsDefault;
+  pipeline.add_option("--iterations", iterations, "Number of iterations to run.");
+
+  int threads = threadsDefault;
+  pipeline.add_option("--threads", threads, "Number of threads to use.");
+
+  ITK_WASM_PARSE(pipeline);
+
+  std::ostream & timingsStream = timingsJson.Get();
+#else
+  if (argc > 5)
   {
     std::cerr << "Usage: " << std::endl;
-    std::cerr << argv[0] << " timingsFile [iterations [threads]]" << std::endl;
+    std::cerr << argv[0] << " timingsFile [--iterations iterations [--threads threads]]" << std::endl;
     return EXIT_FAILURE;
   }
 
   const std::string timingsFileName = ReplaceOccurrence(argv[1], "__DATESTAMP__", PerfDateStamp());
-  const int         iterations = (argc > 2) ? std::stoi(argv[2]) : 500;
-  const int         threads = (argc > 3) ? std::stoi(argv[3]) : MultiThreaderName::GetGlobalDefaultNumberOfThreads();
+  auto              timingsStream = std::ofstream(timingsFileName, std::ios_base::out);
+  const int         iterations = (argc > 3) ? std::stoi(argv[3]) : iterationsDefault;
+  const int         threads = (argc > 5) ? std::stoi(argv[5]) : threadsDefault;
+#endif
 
   if (threads == 1)
   {
@@ -142,11 +177,15 @@ main(int argc, char * argv[])
   ProbeType t1 = time_it(1, iterations);
   ProbeType t2 = time_it(threads, iterations);
 
-  WriteExpandedReport(timingsFileName, collector, true, true, false);
+  WriteExpandedReport(
+    timingsStream, collector, !noPrintStdout, expandedReport, !noPrintSystemInfo, !noPrintReportHead, false);
 
   double cost = (t2.GetMinimum() - t1.GetMinimum()) / (threads - 1.0);
 
-  std::cout << "\n\nEstimated overhead cost per thread: " << cost * 1e6 << " micro-seconds\n\n";
+  if (!noPrintStdout)
+  {
+    std::cout << "\n\nEstimated overhead cost per thread: " << cost * 1e6 << " micro-seconds\n\n";
+  }
 
   return EXIT_SUCCESS;
 }

@@ -41,7 +41,9 @@ m_Map.emplace(                                                                  
 
 namespace itk {
 
+#ifndef __wasi__
 std::mutex PerformanceBenchmarkingInformation::m_Mutex;
+#endif
 PerformanceBenchmarkingInformation::Pointer PerformanceBenchmarkingInformation::m_InformationInstance;
 PerformanceBenchmarkingInformation::MapType PerformanceBenchmarkingInformation::m_Map;
 
@@ -56,7 +58,9 @@ PerformanceBenchmarkingInformation::Pointer
 PerformanceBenchmarkingInformation
 ::GetInstance()
 {
+#ifndef __wasi__
   std::lock_guard<std::mutex> mutexHolder(m_Mutex);
+#endif
   if (m_InformationInstance.IsNull())
   {
     m_InformationInstance = ObjectFactory<Self>::Create();

@@ -42,3 +42,13 @@ cmake-build*/**
 doc/*.pyg
 doc/_minted-ITKPerformanceBenchmarking/*
 
+
+emscripten-build/
+micromamba/
+node_modules/
+test/pyodide-emscripten.tar.bz2
+wasi-build/
+wasm/typescript/
+wasm/python/
+
+.asv/

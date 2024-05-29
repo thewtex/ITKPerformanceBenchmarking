@@ -16,9 +16,9 @@ For more information, see::
 itk_module(PerformanceBenchmarking
   ENABLE_SHARED
   PRIVATE_DEPENDS
-    ITKCommon
+  ITKCommon
   TEST_DEPENDS
-    ITKTestKernel
+  ITKTestKernel
   EXCLUDE_FROM_DEFAULT
   DESCRIPTION
   "${DOCUMENTATION}"

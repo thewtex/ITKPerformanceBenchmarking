@@ -113,29 +113,29 @@ ReplaceOccurrence(std::string str, const std::string && findvalue, const std::st
 }
 
 void
-WriteExpandedReport(const std::string &                        timingsFileName,
+WriteExpandedReport(std::ostream &                             timingsStream,
                     itk::HighPriorityRealTimeProbesCollector & collector,
+                    bool                                       printStdout,
+                    bool                                       expandedReport,
                     bool                                       printSystemInfo,
                     bool                                       printReportHead,
                     bool                                       useTabs)
 {
-  collector.Report(std::cout, printSystemInfo, printReportHead, useTabs);
-  std::ofstream timingsFile(timingsFileName, std::ios_base::out);
-  if (timingsFileName.find(".json"))
+  if (printStdout)
   {
-    std::stringstream probejsonstream;
-    collector.JSONReport(probejsonstream, printSystemInfo);
-    const std::string finalJsonString = DecorateWithBuildInformation(probejsonstream.str());
-    timingsFile << finalJsonString;
+    if (expandedReport)
+    {
+      collector.ExpandedReport(std::cout, printSystemInfo, printReportHead, useTabs);
+    }
+    else
+    {
+      collector.Report(std::cout, printSystemInfo, printReportHead, useTabs);
+    }
   }
-  else
-  {
-    printSystemInfo = false;
-    printReportHead = true;
-    useTabs = true;
-    collector.ExpandedReport(timingsFile, printSystemInfo, printReportHead, useTabs);
-  }
-  timingsFile.close();
+  std::stringstream probejsonstream;
+  collector.JSONReport(probejsonstream, printSystemInfo);
+  const std::string finalJsonString = DecorateWithBuildInformation(probejsonstream.str());
+  timingsStream << finalJsonString;
 }
 
 std::string

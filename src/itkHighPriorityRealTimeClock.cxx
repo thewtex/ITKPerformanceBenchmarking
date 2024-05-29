@@ -92,7 +92,7 @@ HighPriorityRealTimeClock ::RaisePriority()
     this->DisplayErrorMessage();
     itkExceptionMacro("Thread priority could not be set");
   }
-#else
+#elif !defined(__wasi__)
   errno = 0;
   this->m_OldProcessPriority = getpriority(PRIO_PROCESS, 0);
   if (this->m_OldProcessPriority == -1 && errno != 0)
@@ -156,7 +156,7 @@ HighPriorityRealTimeClock ::RestorePriority()
   {
     this->DisplayErrorMessage();
   }
-#else
+#elif !defined(__wasi__)
   errno = 0;
   if (setpriority(PRIO_PROCESS, 0, this->m_OldProcessPriority) == -1)
   {

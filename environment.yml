@@ -1,0 +1,13 @@
+name: performance-benchmarking
+channels:
+  - conda-forge
+dependencies:
+  - pytest
+  - pytest-benchmark
+  - python=3.11
+  - pip
+  - pip:
+    - hatch
+    - asv
+    - itkwasm-mesh-io
+    - itkwasm-image-io

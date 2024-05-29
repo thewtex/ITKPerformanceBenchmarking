@@ -13,7 +13,9 @@
 #include <sstream>
 #include <vector>
 #include <limits>
-#include <mutex>
+#ifndef __wasi__
+#  include <mutex>
+#endif
 
 // Snippet that creates an assertion function that works both in DEBUG & RELEASE mode.
 // JSONXX_ASSERT(...) macro will redirect to this. assert() macro is kept untouched.
@@ -145,8 +147,7 @@ parse_string(std::istream & input, String & value)
         case 't':
           value.push_back('\t');
           break;
-        case 'u':
-        {
+        case 'u': {
           int               i;
           std::stringstream ss;
           for (i = 0; (!input.eof() && input.good()) && i < 4; ++i)
@@ -672,14 +673,18 @@ std::string
 escape_string(const std::string & input, const bool quote = false)
 {
   static std::string map[256], *once = 0;
-  static std::mutex  mutex;
+#ifndef __wasi__
+  static std::mutex mutex;
+#endif
   if (!once)
   {
     // The problem here is that, once is initializing at the end of job, but if multithreaded application is starting
     // this for the first time it will jump into this part with several threads and cause double free or corruptions. To
     // prevent it, it is required to have mutex, to lock other threads while only one of them is constructing the static
     // map.
+#ifndef __wasi__
     mutex.lock();
+#endif
     if (!once)
     {
       // base
@@ -706,7 +711,9 @@ escape_string(const std::string & input, const bool quote = false)
 
       once = map;
     }
+#ifndef __wasi__
     mutex.unlock();
+#endif
   }
   std::string output;
   output.reserve(input.size() * 2 + 2); // worst scenario
